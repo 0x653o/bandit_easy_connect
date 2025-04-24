@@ -4,10 +4,10 @@
 show_usage() {
   echo "Usage:"
   echo "  1. Make the script executable:"
-  echo "     chmod +x auto_ssh.sh"
+  echo "     chmod +x bandit.sh"
   echo "  2. Run the script:"
-  echo "     ./auto_ssh.sh <bandit_number> <password>"
-  echo "  Example: ./auto_ssh.sh 0 bandit"
+  echo "     ./bandit.sh <bandit_number> <password>"
+  echo "  Example: ./bandit.sh 0 bandit"
   echo "  - <bandit_number>: Bandit level number (e.g., 0, 1, 2, ...)"
   echo "  - <password>: Password for the corresponding bandit level"
   echo "  Note: The password is passed as a command-line argument and may be stored in shell history."
