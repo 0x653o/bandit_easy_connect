@@ -20,3 +20,6 @@ Example: ./bandit.sh 0 bandit
 >Note: The password is passed as a command-line argument and may be stored in shell history.
 
 and it will make an file of passwd
+if you typed worng passwd?
+
+it will update your passwd after you connected sucsessfully
