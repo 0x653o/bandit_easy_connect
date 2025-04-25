@@ -1,4 +1,4 @@
-# bandit_for_easy_connect
+# bandit_easy_connect
 ## bandit_website
 #### __BANDIT__[https://overthewire.org/wargames/bandit/]
 
