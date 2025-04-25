@@ -1,12 +1,14 @@
 # bandit_for_easy_connect
 
 ## Usage:
+### 1. Copy the bandit.sh into your computer
+### 2. Open terminal and follow the under
 
-### 1. Make the script executable
+### 3. Make the script executable
 ```sh
 chmod +x bandit.sh
 ```
-### 2. Run the script:
+### 4. Run the script:
 ```sh
 ./bandit.sh <bandit_number> <password>
 
@@ -22,4 +24,5 @@ Example: ./bandit.sh 0 bandit
 and it will make an file of passwd
 if you typed worng passwd?
 
-it will update your passwd after you connected sucsessfully
+Also, it's ok that your password is incorrect. 
+It will update your passwd after you connected sucsessfully
