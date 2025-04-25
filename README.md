@@ -1,4 +1,7 @@
 # bandit_for_easy_connect
+## bandit_website
+#### __BANDIT__[https://overthewire.org/wargames/bandit/]
+
 
 ## Usage:
 ### 1. Copy the bandit.sh into your computer
