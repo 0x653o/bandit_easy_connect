@@ -35,26 +35,27 @@ REMOTE_USER="bandit$BANDIT_NUM"
 PORT="2220"
 PASSWORD_LOG="bandit_passwords.txt"
 NEXT_BANDIT=$((BANDIT_NUM + 1))
+LOG_FILE=".bandit_script.log"
 
 # Display information
 echo "Bandit number = $BANDIT_NUM"
 echo "Password = $PASSWORD"
 
-# Check if expect is installed
-if ! command -v expect >/dev/null 2>&1; then
-  echo "expect is not installed. Attempting to install..."
+# Check if sshpass is installed
+if ! command -v sshpass >/dev/null 2>&1; then
+  echo "sshpass is not installed. Attempting to install..."
 
-  # Check package manager and install expect
+  # Check package manager and install sshpass
   if command -v apt >/dev/null 2>&1; then
     # Ubuntu
     sudo apt update
-    sudo apt install -y expect
+    sudo apt install -y sshpass
   elif command -v yum >/dev/null 2>&1; then
     # CentOS/RHEL
-    sudo yum install -y expect
+    sudo yum install -y sshpass
   elif command -v brew >/dev/null 2>&1; then
     # macOS (Homebrew installed)
-    brew install expect
+    brew install sshpass
   else
     # macOS without Homebrew or other OS
     echo "Homebrew is not installed."
@@ -68,25 +69,25 @@ if ! command -v expect >/dev/null 2>&1; then
       elif [ -f /usr/local/bin/brew ]; then
         eval "$(/usr/local/bin/brew shellenv)"
       fi
-      # Install expect
-      brew install expect
+      # Install sshpass
+      brew install sshpass
     else
-      echo "Homebrew installation canceled. Please install expect manually."
+      echo "Homebrew installation canceled. Please install sshpass manually."
       show_usage
       exit 1
     fi
   fi
 
   # Verify installation
-  if ! command -v expect >/dev/null 2>&1; then
-    echo "Failed to install expect. Please install it manually."
+  if ! command -v sshpass >/dev/null 2>&1; then
+    echo "Failed to install sshpass. Please install it manually."
     show_usage
     exit 1
   fi
-  echo "expect has been successfully installed."
+  echo "sshpass has been successfully installed."
 fi
 
-# Check if previous attempt failed with incorrect password
+# Function to log or update password
 check_and_update_password() {
   local log_entry="bandit$BANDIT_NUM => bandit$NEXT_BANDIT"
   local temp_file="temp_passwords.txt"
@@ -97,103 +98,44 @@ check_and_update_password() {
       # Replace the existing entry with the new password
       sed "s/^$log_entry .*/$log_entry $PASSWORD/" "$PASSWORD_LOG" > "$temp_file"
       mv "$temp_file" "$PASSWORD_LOG"
-      echo "Updated password for $log_entry in $PASSWORD_LOG"
+      echo "Updated password for $log_entry in $PASSWORD_LOG" >> "$LOG_FILE"
     else
       # Append new entry
       echo "$log_entry $PASSWORD" >> "$PASSWORD_LOG"
-      echo "Logged password to $PASSWORD_LOG"
+      echo "Logged password to $PASSWORD_LOG" >> "$LOG_FILE"
     fi
   else
     # Create new log file and append
     echo "$log_entry $PASSWORD" >> "$PASSWORD_LOG"
-    echo "Created and logged password to $PASSWORD_LOG"
+    echo "Created and logged password to $PASSWORD_LOG" >> "$LOG_FILE"
   fi
   # Set permissions for the log file
-  chmod 600 "$PASSWORD_LOG"
+  chmod 600 "$PASSWORD_LOG" 2>/dev/null
 }
 
-# SSH connection using expect
-connection_failed=false
-/usr/bin/expect <<EOF
-  spawn ssh -p $PORT $REMOTE_USER@$REMOTE_HOST
-  expect {
-    "Are you sure you want to continue connecting (yes/no/[fingerprint])?" {
-      send "yes\r"
-      expect {
-        "$REMOTE_USER@$REMOTE_HOST's password:" {
-          send "$PASSWORD\r"
-          expect {
-            "$REMOTE_USER@*" {
-              # Successfully logged in
-            }
-            "Permission denied" {
-              puts "Error: Incorrect password."
-              set ::connection_failed true
-              exit 1
-            }
-            eof {
-              puts "Error: SSH connection failed (incorrect password or server issue)."
-              set ::connection_failed true
-              exit 1
-            }
-          }
-        }
-        eof {
-          puts "Error: SSH connection failed (unable to connect to server)."
-          set ::connection_failed true
-          exit 1
-        }
-      }
-    }
-    "$REMOTE_USER@$REMOTE_HOST's password:" {
-      send "$PASSWORD\r"
-      expect {
-        "$REMOTE_USER@*" {
-          # Successfully logged in
-        }
-        "Permission denied" {
-          puts "Error: Incorrect password."
-          set ::connection_failed true
-          exit 1
-        }
-        eof {
-          puts "Error: SSH connection failed (incorrect password or server issue)."
-          set ::connection_failed true
-          exit 1
-        }
-      }
-    }
-    "Connection refused" {
-      puts "Error: Unable to connect to server (check port $PORT or host $REMOTE_HOST)."
-      set ::connection_failed true
-      exit 1
-    }
-    "Could not resolve hostname" {
-      puts "Error: Could not resolve hostname ($REMOTE_HOST). Check DNS or network."
-      set ::connection_failed true
-      exit 1
-    }
-    eof {
-      puts "Error: SSH connection failed (unknown error)."
-      set ::connection_failed true
-      exit 1
-    }
-  }
-  interact
-EOF
+# Attempt SSH connection using sshpass
+echo "Connecting to $REMOTE_USER@$REMOTE_HOST on port $PORT..."
+SSHPASS="$PASSWORD" sshpass -e ssh -p "$PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$REMOTE_USER@$REMOTE_HOST" 2>>"$LOG_FILE"
+SSH_EXIT_STATUS=$?
 
-# Check expect exit status
-if [ $? -ne 0 ]; then
-  echo "SSH connection failed. Please check the error message above."
+# Check SSH connection status
+if [ $SSH_EXIT_STATUS -ne 0 ]; then
+  echo "Error: SSH connection failed. Possible reasons:"
+  echo "  - Incorrect password"
+  echo "  - Server is unreachable (check host $REMOTE_HOST and port $PORT)"
+  echo "  - Network issues"
+  echo "Check $LOG_FILE for details."
   show_usage
   exit 1
 fi
 
-# Log or update password on successful connection
-if [ "$connection_failed" = false ]; then
+# Log or update password in the background
+(
   check_and_update_password
-fi
+  # Set script file permissions to preserve executable bit
+  chmod 700 "$0" 2>/dev/null
+  echo "Script file permissions set to 700." >> "$LOG_FILE"
+) &
 
-# Set script file permissions
-chmod 600 "$0"
-echo "Script file permissions set to 600."
+# Exit successfully
+exit 0
