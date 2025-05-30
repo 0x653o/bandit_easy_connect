@@ -6,7 +6,7 @@
 ## Usage:
 ### 1. Copy the bandit.sh into your computer
 >ONLY IN UNIX/LINUX SYSTEM
->for...windows....i'll make it....afetr study powershell command line......sorry😅
+>for...windows....i'll make it....after study powershell command line......sorry😅
 ### 2. Open terminal and follow the under
 
 ### 3. Make the script executable
