@@ -17,7 +17,7 @@ chmod +x bandit.sh
 ```sh
 ./bandit.sh <bandit_number> <password>
 
-Example: ./bandit.sh 0 bandit
+Example: ./bandit.sh 0 bandit0
 
 <bandit_number>: Bandit level number (e.g., 0, 1, 2, ...)
 ```
